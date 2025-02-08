@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { SpeedInsights } from '@vercel/speed-insights/nuxt';
+
 useSeoMeta({
   description: 'cmtlyt 的游戏中心',
   ogTitle: '游戏中心',
@@ -23,6 +25,7 @@ useHead({
 </script>
 
 <template>
+  <SpeedInsights />
   <NuxtPage />
 </template>
 
