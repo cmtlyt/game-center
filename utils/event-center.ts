@@ -1,14 +1,11 @@
-import type { TAnyFunc } from '@cmtlyt/base';
-import type { Hookable } from 'hookable';
-import { createHooks } from 'hookable';
+import type { TAnyFunc, TObject } from '@cmtlyt/base';
 
 const instanceMap = new Map<string, EventCenter>();
 
 export class EventCenter {
-  private hooks: Hookable;
+  private handlerMap: TObject<TAnyFunc[]> = {};
 
   constructor(token: string = 'global') {
-    this.hooks = createHooks();
     if (!instanceMap.has(token)) {
       instanceMap.set(token, this);
     }
@@ -16,18 +13,33 @@ export class EventCenter {
   }
 
   on(eventName: string, cb: TAnyFunc) {
-    this.hooks.hook(eventName, cb);
+    if (!this.handlerMap[eventName]) {
+      this.handlerMap[eventName] = [];
+    }
+    this.handlerMap[eventName].push(cb);
   }
 
   emit(eventName: string, ...args: any[]) {
-    this.hooks.callHook(eventName, ...args);
-  }
-
-  remove(eventName: string, cb: TAnyFunc) {
-    this.hooks.removeHook(eventName, cb);
+    if (this.handlerMap[eventName]) {
+      this.handlerMap[eventName].forEach(cb => cb(...args));
+    }
   }
 
   once(eventName: string, cb: TAnyFunc) {
-    this.hooks.hookOnce(eventName, cb);
+    const wrapper = (...args: any[]) => {
+      cb(...args);
+      this.remove(eventName, wrapper);
+    };
+    this.on(eventName, wrapper);
+  }
+
+  remove(eventName: string, cb: TAnyFunc) {
+    if (this.handlerMap[eventName]) {
+      this.handlerMap[eventName] = this.handlerMap[eventName].filter(c => c !== cb);
+    }
+  }
+
+  clear(eventName: string) {
+    this.handlerMap[eventName] = [];
   }
 }

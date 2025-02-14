@@ -49,12 +49,12 @@
  * 5. 用户进入房间, 创建 RTC 链接 (a 创建设置并发送 offer, b 创建设置并接受 offer, b 发送 answer, a 接受 answer)
  */
 import type { TAnyFunc, TFunc, TObject, TOptional } from '@cmtlyt/base';
-import type { Socket } from 'socket.io-client';
 import { cacheReturnValue, getRandomString, noop } from '@cmtlyt/base';
 import { pick_ } from '@cmtlyt/base/fp/utils';
 import { decode, encode } from '@msgpack/msgpack';
 import defu from 'defu';
-import { io } from 'socket.io-client';
+import { hash } from 'ohash';
+import { createSocket } from './socket-adapter';
 
 /** 处理接收数据 */
 function receverdDataHandler(oriData: any) {
@@ -72,7 +72,9 @@ function sendDataHandler(oriData: TObject<any>) {
 
 /** 世界频道 */
 const WORLD_ROOM = 'world';
-const SOCKET_URL = 'ws://localhost:8888';
+
+// const SOCKET_URL = 'ws://localhost:8888';
+const SOCKET_URL = `${location.protocol === 'https:' ? 'wss://' : 'ws://'}${location.host}/socket.io`;
 
 interface JoinRoomOfferInfo {
   userId: string;
@@ -90,23 +92,29 @@ interface ClientInfo {
   roomId: string;
 }
 
-interface EventCenterAduptor {
+export interface EventCenterAdapter {
   on: TFunc<[event: string, handler: TAnyFunc], any>;
   once: TFunc<[event: string, handler: TAnyFunc], any>;
   remove: TFunc<[event: string, handler: TAnyFunc], any>;
   emit: TFunc<[event: string, data: any], any>;
 }
 
+export interface SocketAdapter {
+  on: TFunc<[event: string, handler: TAnyFunc], any>;
+  off: TFunc<[event: string, handler?: TAnyFunc], any>;
+  emit: TFunc<[event: string, data: any], any>;
+}
+
 export interface ClientOption {
   userId: string;
-  eventCenter: EventCenterAduptor;
+  eventCenter: EventCenterAdapter;
   generateRoomId: TFunc<[], string | Promise<string>>;
   onJoinRoomOffer: TFunc<[JoinRoomOfferInfo], boolean | Promise<boolean>>;
   onJoinRoomAnswer: TFunc<[JoinRoomAnswerInfo], any>;
 }
 
 interface Store extends ClientInfo, ClientOption {
-  socket: Socket;
+  socket: SocketAdapter;
   rtcClients: RTCClient[];
 }
 
@@ -115,7 +123,7 @@ let store: Store = {
   isRoomAdmin: false,
   roomId: WORLD_ROOM,
   userId: '',
-  socket: null as unknown as Socket,
+  socket: null as unknown as SocketAdapter,
   rtcClients: [],
   eventCenter: new EventCenter(),
   onJoinRoomOffer: noop,
@@ -146,12 +154,14 @@ const broadcastEvents = [
 ];
 
 function getPayload(event: SocketEventMap, data?: TObject<any>, operation?: TObject<any>, encodeData = true) {
-  return {
+  const payload: TObject<any> = {
     roomId: store.roomId,
     userId: store.userId,
     data: encodeData ? sendDataHandler({ ...data, event }) : { ...data, event },
     operation,
   };
+  payload.sign = hash(payload);
+  return payload;
 }
 
 /** 发送事件 */
@@ -168,8 +178,11 @@ function emit(event: SocketEventMap, data?: TObject<any>, operation?: TObject<an
 function onEvent(event: SocketEventMap, handler: (data: any) => void, once?: boolean) {
   const eventName = broadcastEvents.includes(event) ? 'broadcast' : event;
   const callback = (oriPayload: TObject<any>) => {
+    const { sign, ...otherPayload } = oriPayload;
+    if (sign !== hash(otherPayload))
+      return;
     const payload = {
-      ...oriPayload,
+      ...otherPayload,
       data: oriPayload.metadata?.unpack ? oriPayload.data : receverdDataHandler(oriPayload.data),
     };
     const {
@@ -365,7 +378,7 @@ function rtcEmit(event: string, data: any) {
   sendData({ event, data }, true);
 }
 
-export interface RTCControllerInstance extends EventCenterAduptor {
+export interface RTCControllerInstance extends EventCenterAdapter {
   /** 客户端信息 */
   clientInfo: ClientInfo;
   /** 创建房间 */
@@ -382,7 +395,7 @@ export const getRTCController = cacheReturnValue((
   option: TOptional<ClientOption, 'eventCenter' | 'generateRoomId'>,
 ): RTCControllerInstance => {
   /** 创建 socekt 链接 */
-  const socket = io(SOCKET_URL);
+  const socket = createSocket(SOCKET_URL);
   /** 进入世界频道 */
   joinRoom(WORLD_ROOM);
 
