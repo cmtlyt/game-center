@@ -13,6 +13,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@cmtlyt/base": "^0.11.1",
     "@fingerprintjs/fingerprintjs": "^4.5.1",
     "@msgpack/msgpack": "^3.0.1",
     "@vercel/speed-insights": "^1.1.0",
