@@ -53,7 +53,7 @@ import { cacheReturnValue, getRandomString, noop } from '@cmtlyt/base';
 import { pick_ } from '@cmtlyt/base/fp/utils';
 import { decode, encode } from '@msgpack/msgpack';
 import defu from 'defu';
-import { hash } from 'ohash';
+// import { hash } from 'ohash';
 import { createSocket } from './socket-adapter';
 
 /** 处理接收数据 */
@@ -153,6 +153,14 @@ const broadcastEvents = [
   SocketEventMap.candidate,
 ];
 
+function signature(_payload: TObject<any>) {
+  // 完整 payload 会在后端根据 operation 等参数进行转换所以只验证 data, userId, roomId 数据的准确性即可
+  // TODO: 存在消息被劫持转发给他人或其他房间的可能
+  // TODO: 测试阶段不进行数据签名, 后续完善后再进行数据签名
+  // return hash(pick_(['data', 'userId'], payload));
+  return '';
+}
+
 function getPayload(event: SocketEventMap, data?: TObject<any>, operation?: TObject<any>, encodeData = true) {
   const payload: TObject<any> = {
     roomId: store.roomId,
@@ -160,7 +168,7 @@ function getPayload(event: SocketEventMap, data?: TObject<any>, operation?: TObj
     data: encodeData ? sendDataHandler({ ...data, event }) : { ...data, event },
     operation,
   };
-  payload.sign = hash(payload);
+  payload.sign = signature({ ...payload, data: { ...data, event } });
   return payload;
 }
 
@@ -179,12 +187,12 @@ function onEvent(event: SocketEventMap, handler: (data: any) => void, once?: boo
   const eventName = broadcastEvents.includes(event) ? 'broadcast' : event;
   const callback = (oriPayload: TObject<any>) => {
     const { sign, ...otherPayload } = oriPayload;
-    if (sign !== hash(otherPayload))
-      return;
-    const payload = {
+    const payload: TObject<any> = {
       ...otherPayload,
       data: oriPayload.metadata?.unpack ? oriPayload.data : receverdDataHandler(oriPayload.data),
     };
+    if (sign !== signature(payload))
+      return;
     const {
       data: { event: absEvent },
     } = payload;
@@ -199,7 +207,7 @@ function onEvent(event: SocketEventMap, handler: (data: any) => void, once?: boo
 }
 
 /** 进入房间 */
-function joinRoom(roomId: string, roomAdminId?: string) {
+function joinRoom(roomId: string, roomAdminId: string = '') {
   store.roomId = roomId;
   emit(SocketEventMap.joinRoom, { roomAdminId }, { sendSelfId: true });
 }
