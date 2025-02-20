@@ -19,6 +19,15 @@ export default defineNuxtConfig({
       enabled: true,
     },
   },
+  vite: {
+    css: {
+      preprocessorOptions: {
+        less: {
+          javascriptEnabled: true,
+        },
+      },
+    },
+  },
   modules: [
     '@vueuse/nuxt',
     '@formkit/auto-animate',

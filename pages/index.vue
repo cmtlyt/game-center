@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RTCControllerInstance } from '@/utils/rtc-controller';
+import { DiceGroup } from '#components';
 
 const rtcRef = shallowRef() as Ref<RTCControllerInstance | null>;
 const messages = reactive<string[]>([]);
@@ -37,6 +38,11 @@ function joinRoom() {
   // @ts-expect-error test
   rtcRef.value?.sendJoinRoomOffer(window.roomId);
 }
+
+function handleDiceResult(result: number) {
+  // eslint-disable-next-line no-console
+  console.log('骰子结果：', result);
+}
 </script>
 
 <template>
@@ -55,6 +61,14 @@ function joinRoom() {
     <button @click="sendMessage">
       发送消息
     </button>
+  </div>
+  <h2>骰子组合</h2>
+  <div>
+    <DiceGroup :size="100" :count="3" :column="2" :gap="50" @finish="handleDiceResult" />
+  </div>
+  <h2>单个骰子</h2>
+  <div>
+    <Dice @finish="handleDiceResult" />
   </div>
 </template>
 
