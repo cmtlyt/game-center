@@ -48,6 +48,11 @@ function hanleDiceFinish(result: number, index: number) {
     emit('finish', dice);
   }
 }
+
+function handleBeforeRoll() {
+  // eslint-disable-next-line no-console
+  console.debug('beforeRoll');
+}
 </script>
 
 <template>
@@ -61,11 +66,12 @@ function hanleDiceFinish(result: number, index: number) {
     <Dice
       v-for="(_, index) in count"
       :key="index"
-      :ref="diceRefs[index]"
+      :ref="el => diceRefs[index] = el"
       enable
       group-mode
       :size="size"
       @finish="(res) => hanleDiceFinish(res, index)"
+      @before-roll="handleBeforeRoll"
       @click="handleClick"
     />
   </div>

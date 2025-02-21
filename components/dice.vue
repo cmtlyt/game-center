@@ -5,15 +5,15 @@
  */
 
 interface Props {
+  number?: number; // 骰子点数
   size?: number; // 骰子大小
   enable?: boolean; // 是否可点击进行投掷
   groupMode?: boolean; // 是否为组合模式
   duration?: number; // 动画持续时间
-  onFinish?: (result: number) => void; // 动画结束后的回调
-  onBeforeRoll?: () => void; // 动画开始前的回调
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  number: 1,
   enable: true,
   size: 100,
   groupMode: false,
@@ -22,19 +22,18 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   finish: [result: number];
+  beforeRoll: [];
 }>();
 
 // 骰子当前显示的点数（1-6）
 const result = ref(1);
-// 是否正在进行投掷动画
-const isRolling = ref(false);
 // 骰子旋转角度
 const rotate = reactive({
   x: 0, // 在 X 轴上的旋转角度
   y: 0, // 在 Y 轴上的旋转角度
+  running: false, // 是否正在运行
+  hover: false, // 是否悬停
 });
-// 是否正在悬停在骰子上
-const isHovering = ref(false);
 // 动画开始的时间戳
 const animationStartTime = ref(0);
 
@@ -59,13 +58,13 @@ const FACE_DOT_POSITIONS = {
 } as const;
 
 function roll() {
-  if (isRolling.value)
+  if (rotate.running)
     return;
 
-  isRolling.value = true;
+  rotate.running = true;
   animationStartTime.value = performance.now();
 
-  function animate(currentTime: number) {
+  const animate = (currentTime: number) => {
     const elapsed = currentTime - animationStartTime.value;
 
     if (elapsed < props.duration) {
@@ -78,10 +77,10 @@ function roll() {
     else {
       // 动画结束
       result.value = Math.floor(Math.random() * 6) + 1;
-      isRolling.value = false;
+      rotate.running = false;
       emit('finish', result.value);
     }
-  }
+  };
 
   requestAnimationFrame(animate);
 }
@@ -91,7 +90,7 @@ const dotSize = props.size * 0.15; // 将点的大小比例从 0.2 调整为 0.1
 
 // 骰子旋转样式
 const cubeStyle = computed(() => ({
-  transform: isHovering.value
+  transform: rotate.hover
     ? `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`
     : 'rotateX(0deg) rotateY(0deg)',
 }));
@@ -99,21 +98,22 @@ const cubeStyle = computed(() => ({
 function handleClick() {
   // 在组合模式下，只触发 onBeforeRoll
   if (props.groupMode) {
-    props.onBeforeRoll?.();
+    emit('beforeRoll');
     return;
   }
 
   // 单独模式下，直接执行投掷
   if (!props.enable)
     return;
-  props.onBeforeRoll?.();
+  emit('beforeRoll');
   roll();
 }
 
 // 获取指定面的点位置数组
-function getFaceDotPositions(face: keyof typeof FACE_DOT_POSITIONS, result?: number) {
+function getFaceDotPositions(face: keyof typeof FACE_DOT_POSITIONS) {
+  const currentNumber = face === 'front' ? result.value : undefined;
   const positions = FACE_DOT_POSITIONS[face];
-  return typeof positions === 'function' ? positions(result!) : positions;
+  return typeof positions === 'function' ? positions(currentNumber!) : positions;
 }
 
 defineExpose({
@@ -124,15 +124,15 @@ defineExpose({
 <template>
   <div
     class="dice"
-    :class="{ rolling: isRolling }"
+    :class="{ rolling: rotate.running }"
     :style="{ width: `${size / 16}rem`, height: `${size / 16}rem` }"
     @click="handleClick"
   >
     <div class="dice-cube" :style="cubeStyle">
       <template v-for="face in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="face">
-        <div class="face" :class="[face]">
+        <div class="face" :class="face">
           <div
-            v-for="position in getFaceDotPositions(face, face === 'front' ? result : undefined)"
+            v-for="position in getFaceDotPositions(face)"
             :key="position"
             class="dot"
             :class="position"
