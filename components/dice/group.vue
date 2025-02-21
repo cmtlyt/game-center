@@ -5,7 +5,7 @@
  *  1. 点击骰子其他骰子也会投掷
  *  2. 全部完成之后返回总和
  */
-export interface DiceGroupProps {
+interface DiceGroupProps {
   count?: number; // 骰子数量
   size?: number; // 骰子尺寸
   gap?: number; // 骰子之间的间距
@@ -20,34 +20,32 @@ const props = withDefaults(defineProps<DiceGroupProps>(), {
 });
 
 const emit = defineEmits<{
-  finish: [result: number];
+  finish: [result: number[]];
 }>();
 const diceRefs = ref<any[]>(Array.from({ length: props.count }, () => null));
-const dice = ref(Array.from({ length: props.count }, () => 0));
-const rollingCount = ref(0);
+let dice = Array.from({ length: props.count }, () => 0);
+let rollingCount = 0;
 
 /** 点击任一骰子，所有骰子都会投掷 */
 function handleClick() {
   if (!diceRefs.value?.length)
     return;
 
-  rollingCount.value = 0;
-  dice.value = Array.from({ length: props.count }, () => 0);
+  rollingCount = 0;
+  dice = Array.from({ length: props.count }, () => 0);
 
   diceRefs.value.forEach((dice) => {
-    if (dice)
-      dice.roll();
+    dice?.roll();
   });
 }
 
 /** 将每个骰子投掷结果记录 */
 function hanleDiceFinish(result: number, index: number) {
-  dice.value[index] = result;
-  rollingCount.value++;
+  dice[index] = result;
+  rollingCount++;
 
-  if (rollingCount.value === props.count) {
-    const sum = dice.value.reduce((acc, cur) => acc + cur, 0);
-    emit('finish', sum);
+  if (rollingCount === props.count) {
+    emit('finish', dice);
   }
 }
 </script>
@@ -56,24 +54,24 @@ function hanleDiceFinish(result: number, index: number) {
   <div
     class="dice-group-container"
     :style="{
-      gap: `${props.gap}px`,
-      gridTemplateColumns: `repeat(${props.column}, 1fr)`,
+      gap: `${gap}px`,
+      gridTemplateColumns: `repeat(${column}, 1fr)`,
     }"
   >
     <Dice
-      v-for="(item, index) in Array(props.count).fill(0)"
+      v-for="(_, index) in count"
       :key="index"
-      :ref="el => diceRefs[index] = el"
-      :enable="true"
-      :group-mode="true"
+      :ref="diceRefs[index]"
+      enable
+      group-mode
       :size="size"
-      :on-finish="(res) => hanleDiceFinish(res, index)"
+      @finish="(res) => hanleDiceFinish(res, index)"
       @click="handleClick"
     />
   </div>
 </template>
 
-<style scoped lang='less'>
+<style scoped lang='scss'>
 .dice-group-container {
   display: grid;
   width: fit-content;

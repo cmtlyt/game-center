@@ -1,0 +1,22 @@
+{
+  "name": "@cmtlyt/game-center",
+  "tree": [
+    {
+      "name": "components",
+      "body": "",
+      "index": 9,
+      "bold": false,
+      "path": "components",
+      "children": [
+        {
+          "name": "dice",
+          "body": "",
+          "index": 9,
+          "bold": false,
+          "path": "components/dice",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
