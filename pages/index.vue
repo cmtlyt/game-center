@@ -63,7 +63,7 @@ function handleDiceResult(result: number[] | number) {
   </div>
   <h2>骰子组合</h2>
   <div>
-    <DiceGroup :size="10" :count="3" :column="2" :gap="10" @finish="handleDiceResult" />
+    <Dice :size="10" :number="3" :column="2" :gap="10" @finish="handleDiceResult" />
   </div>
   <h2>单个骰子</h2>
   <div>

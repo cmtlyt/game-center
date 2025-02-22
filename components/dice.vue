@@ -1,108 +1,143 @@
 <script setup lang="ts">
 /**
  * 骰子组件
- * 功能：点击骰子返回数字
+ * 功能：点击骰子返回数字数组
  */
 
 interface Props {
-  number?: number; // 骰子点数
-  size?: number; // 骰子大小
-  enable?: boolean; // 是否可点击进行投掷
-  groupMode?: boolean; // 是否为组合模式
-  duration?: number; // 动画持续时间
+  number?: number; // 骰子数量
+  size?: number; // 骰子尺寸
+  gap?: number; // 骰子之间的间距
+  column?: number; // 每行骰子数量
+  enable?: boolean; // 是否启用
+  duration?: number; // 动画时长
 }
 
 const props = withDefaults(defineProps<Props>(), {
   number: 1,
-  enable: true,
   size: 100,
-  groupMode: false,
+  gap: 10,
+  column: 2,
+  enable: true,
   duration: 1000,
 });
 
 const emit = defineEmits<{
-  finish: [result: number];
+  finish: [results: number[]];
   beforeRoll: [];
 }>();
 
-// 骰子当前显示的点数（1-6）
-const result = ref(1);
-// 骰子旋转角度
-const rotate = reactive({
-  x: 0, // 在 X 轴上的旋转角度
-  y: 0, // 在 Y 轴上的旋转角度
-  running: false, // 是否正在运行
-  hover: false, // 是否悬停
-});
-// 动画开始的时间戳
-const animationStartTime = ref(0);
+// 根据骰子数量初始化结果数组
+const results = Array.from({ length: props.number }, () => 1);
 
-// 骰子各个点数对应的点位置
-const DOT_POSITIONS = {
-  1: ['center'],
-  2: ['top-right', 'bottom-left'],
-  3: ['top-right', 'center', 'bottom-left'],
-  4: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-  5: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
-  6: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
-} as const;
+// 存储每个骰子的旋转状态
+const rotates = ref(Array.from({ length: props.number }, () => ({
+  x: 0,
+  y: 0,
+  z: 0,
+  running: false,
+})));
 
-// 骰子所有面的点位
+// 随机选择一个面朝上
+const FACES = ['front', 'back', 'right', 'left', 'top', 'bottom'] as const;
+const getRandomFace = () => FACES[Math.floor(Math.random() * FACES.length)];
+
+// 骰子点位置
 const FACE_DOT_POSITIONS = {
-  front: (result: number) => DOT_POSITIONS[result as keyof typeof DOT_POSITIONS] || [],
+  front: (num: number) => {
+    switch (num) {
+      case 1:
+        return ['center'];
+      case 2:
+        return ['top-left', 'bottom-right'];
+      case 3:
+        return ['top-left', 'center', 'bottom-right'];
+      case 4:
+        return ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+      case 5:
+        return ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'];
+      case 6:
+        return ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'];
+      default:
+        return [];
+    }
+  },
   back: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
   right: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
-  left: ['top-right', 'center', 'bottom-left'],
-  top: ['top-right', 'bottom-left'],
-  bottom: ['center'],
+  left: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
+  top: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
+  bottom: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
 } as const;
 
-function roll() {
-  if (rotate.running)
+// 点渲染大小
+const dotSize = computed(() => props.size * 0.15);
+
+// 骰子投掷动画
+async function roll() {
+  if (rotates.value.some(r => r.running))
     return;
 
-  rotate.running = true;
-  animationStartTime.value = performance.now();
+  const rollPromises = Array.from({ length: props.number }, (_, index) => {
+    return new Promise<number>((resolve) => {
+      rotates.value[index].running = true;
+      const startTime = performance.now();
+      const targetFace = getRandomFace();
 
-  const animate = (currentTime: number) => {
-    const elapsed = currentTime - animationStartTime.value;
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
 
-    if (elapsed < props.duration) {
-      // 在动画期间快速更新骰子点数
-      if (elapsed % 50 < 16) { // 约每50ms更新一次数字
-        result.value = Math.floor(Math.random() * 6) + 1;
-      }
+        if (elapsed < props.duration) {
+          // 随机旋转角度
+          rotates.value[index].x = Math.random() * 360;
+          rotates.value[index].y = Math.random() * 360;
+          rotates.value[index].z = Math.random() * 360;
+
+          if (elapsed % 50 < 16) {
+            results[index] = Math.floor(Math.random() * 6) + 1;
+          }
+          requestAnimationFrame(animate);
+        }
+        else {
+          results[index] = Math.floor(Math.random() * 6) + 1;
+          setFinalRotation(index, targetFace);
+          rotates.value[index].running = false;
+          resolve(results[index]);
+        }
+      };
+
       requestAnimationFrame(animate);
-    }
-    else {
-      // 动画结束
-      result.value = Math.floor(Math.random() * 6) + 1;
-      rotate.running = false;
-      emit('finish', result.value);
-    }
-  };
+    });
+  });
 
-  requestAnimationFrame(animate);
+  await Promise.all(rollPromises);
+  emit('finish', [...results]);
 }
 
-// 修改骰子大小计算方式
-const dotSize = props.size * 0.15; // 将点的大小比例从 0.2 调整为 0.15，使其在不同尺寸下更协调
+// 设置最终旋转角度使指定面朝上
+function setFinalRotation(index: number, face: typeof FACES[number]) {
+  const rotationMap = {
+    front: { x: 0, y: 0, z: 0 },
+    back: { x: 0, y: 180, z: 0 },
+    right: { x: 0, y: 90, z: 0 },
+    left: { x: 0, y: -90, z: 0 },
+    top: { x: 90, y: 0, z: 0 },
+    bottom: { x: -90, y: 0, z: 0 },
+  };
 
-// 骰子旋转样式
-const cubeStyle = computed(() => ({
-  transform: rotate.hover
-    ? `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`
-    : 'rotateX(0deg) rotateY(0deg)',
-}));
+  const rotation = rotationMap[face];
+  rotates.value[index] = { ...rotation, running: false };
+}
+
+// 修改骰子旋转样式计算
+function getCubeStyle(index: number) {
+  return {
+    transform: `rotateX(${rotates.value[index].x}deg) 
+              rotateY(${rotates.value[index].y}deg) 
+              rotateZ(${rotates.value[index].z}deg)`,
+  };
+}
 
 function handleClick() {
-  // 在组合模式下，只触发 onBeforeRoll
-  if (props.groupMode) {
-    emit('beforeRoll');
-    return;
-  }
-
-  // 单独模式下，直接执行投掷
   if (!props.enable)
     return;
   emit('beforeRoll');
@@ -111,10 +146,15 @@ function handleClick() {
 
 // 获取指定面的点位置数组
 function getFaceDotPositions(face: keyof typeof FACE_DOT_POSITIONS) {
-  const currentNumber = face === 'front' ? result.value : undefined;
+  const currentNumber = face === 'front' ? results[0] : undefined;
   const positions = FACE_DOT_POSITIONS[face];
   return typeof positions === 'function' ? positions(currentNumber!) : positions;
 }
+
+const containerStyle = computed(() => ({
+  gap: `${props.gap}px`,
+  gridTemplateColumns: `repeat(${props.column}, 1fr)`,
+}));
 
 defineExpose({
   roll,
@@ -123,30 +163,42 @@ defineExpose({
 
 <template>
   <div
-    class="dice"
-    :class="{ rolling: rotate.running }"
-    :style="{ width: `${size / 16}rem`, height: `${size / 16}rem` }"
-    @click="handleClick"
+    class="dice-container"
+    :style="containerStyle"
   >
-    <div class="dice-cube" :style="cubeStyle">
-      <template v-for="face in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="face">
-        <div class="face" :class="face">
-          <div
-            v-for="position in getFaceDotPositions(face)"
-            :key="position"
-            class="dot"
-            :class="position"
-            :style="{ width: `${dotSize / 16}rem`, height: `${dotSize / 16}rem` }"
-          />
-        </div>
-      </template>
+    <div
+      v-for="(_, index) in Array(props.number)"
+      :key="index"
+      class="dice"
+      :class="{ rolling: rotates[index].running }"
+      :style="{ width: `${size / 16}rem`, height: `${size / 16}rem` }"
+      @click="handleClick"
+    >
+      <div class="dice-cube" :style="getCubeStyle(index)">
+        <template v-for="face in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="face">
+          <div class="face" :class="face">
+            <div
+              v-for="position in getFaceDotPositions(face)"
+              :key="position"
+              class="dot"
+              :class="position"
+              :style="{ width: `${dotSize / 16}rem`, height: `${dotSize / 16}rem` }"
+            />
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+.dice-container {
+  display: grid;
+  width: fit-content;
+}
+
 .dice {
-  perspective: 62.5rem; // 1000px -> 62.5rem
+  perspective: 62.5rem;
   cursor: pointer;
 }
 
@@ -204,7 +256,7 @@ defineExpose({
   position: absolute;
   background: #333;
   border-radius: 50%;
-  grid-area: var(--position); /* 通过 CSS 变量控制位置 */
+  grid-area: var(--position);
 }
 
 .center {
