@@ -5,20 +5,20 @@
  */
 
 interface Props {
-  number?: number; // 骰子数量
+  amount?: number; // 骰子数量
   size?: number; // 骰子尺寸
   gap?: number; // 骰子之间的间距
   column?: number; // 每行骰子数量
-  enable?: boolean; // 是否启用
+  disable?: boolean; // 是否禁用
   duration?: number; // 动画时长
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  number: 1,
+  amount: 1,
   size: 100,
   gap: 10,
   column: 2,
-  enable: true,
+  disable: false,
   duration: 1000,
 });
 
@@ -28,79 +28,64 @@ const emit = defineEmits<{
 }>();
 
 // 根据骰子数量初始化结果数组
-const results = Array.from({ length: props.number }, () => 1);
+const results = Array.from({ length: props.amount }, () => 1);
 
 // 存储每个骰子的旋转状态
-const rotates = ref(Array.from({ length: props.number }, () => ({
+const diceRotationStateList = ref(Array.from({ length: props.amount }, () => ({
   x: 0,
   y: 0,
   z: 0,
   running: false,
 })));
 
-// 随机选择一个面朝上
-const FACES = ['front', 'back', 'right', 'left', 'top', 'bottom'] as const;
-const getRandomFace = () => FACES[Math.floor(Math.random() * FACES.length)];
+const DICE_NUMBER_POSITIONS = {
+  1: ['center'],
+  2: ['top-left', 'bottom-right'],
+  3: ['top-left', 'center', 'bottom-right'],
+  4: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  5: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
+  6: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
+} as const;
 
-// 骰子点位置
+const COMMON_SIX_DOTS = ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'] as const;
+
 const FACE_DOT_POSITIONS = {
-  front: (num: number) => {
-    switch (num) {
-      case 1:
-        return ['center'];
-      case 2:
-        return ['top-left', 'bottom-right'];
-      case 3:
-        return ['top-left', 'center', 'bottom-right'];
-      case 4:
-        return ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-      case 5:
-        return ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'];
-      case 6:
-        return ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'];
-      default:
-        return [];
-    }
-  },
-  back: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
+  front: (num: number) => DICE_NUMBER_POSITIONS[num as keyof typeof DICE_NUMBER_POSITIONS] || [],
+  back: COMMON_SIX_DOTS,
   right: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
-  left: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
-  top: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
-  bottom: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
+  left: COMMON_SIX_DOTS,
+  top: COMMON_SIX_DOTS,
+  bottom: COMMON_SIX_DOTS,
 } as const;
 
 // 点渲染大小
-const dotSize = computed(() => props.size * 0.15);
+const dotSize = props.size * 0.15;
 
 // 骰子投掷动画
 async function roll() {
-  if (rotates.value.some(r => r.running))
+  if (diceRotationStateList.value.some(r => r.running))
     return;
 
-  const rollPromises = Array.from({ length: props.number }, (_, index) => {
+  const rollPromises = Array.from({ length: props.amount }, (_, index) => {
     return new Promise<number>((resolve) => {
-      rotates.value[index].running = true;
+      diceRotationStateList.value[index].running = true;
       const startTime = performance.now();
-      const targetFace = getRandomFace();
 
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
 
         if (elapsed < props.duration) {
-          // 随机旋转角度
-          rotates.value[index].x = Math.random() * 360;
-          rotates.value[index].y = Math.random() * 360;
-          rotates.value[index].z = Math.random() * 360;
+          // 动画过程中的随机旋转
+          diceRotationStateList.value[index].x = Math.random() * 360;
+          diceRotationStateList.value[index].y = Math.random() * 360;
+          diceRotationStateList.value[index].z = Math.random() * 360;
 
-          if (elapsed % 50 < 16) {
-            results[index] = Math.floor(Math.random() * 6) + 1;
-          }
           requestAnimationFrame(animate);
         }
         else {
           results[index] = Math.floor(Math.random() * 6) + 1;
-          setFinalRotation(index, targetFace);
-          rotates.value[index].running = false;
+          setFinalRotation(index, 'front');
+          diceRotationStateList.value[index].running = false;
           resolve(results[index]);
         }
       };
@@ -114,7 +99,7 @@ async function roll() {
 }
 
 // 设置最终旋转角度使指定面朝上
-function setFinalRotation(index: number, face: typeof FACES[number]) {
+function setFinalRotation(index: number, face: keyof typeof FACE_DOT_POSITIONS) {
   const rotationMap = {
     front: { x: 0, y: 0, z: 0 },
     back: { x: 0, y: 180, z: 0 },
@@ -125,28 +110,28 @@ function setFinalRotation(index: number, face: typeof FACES[number]) {
   };
 
   const rotation = rotationMap[face];
-  rotates.value[index] = { ...rotation, running: false };
+  diceRotationStateList.value[index] = { ...rotation, running: false };
 }
 
 // 修改骰子旋转样式计算
 function getCubeStyle(index: number) {
   return {
-    transform: `rotateX(${rotates.value[index].x}deg) 
-              rotateY(${rotates.value[index].y}deg) 
-              rotateZ(${rotates.value[index].z}deg)`,
+    transform: `rotateX(${diceRotationStateList.value[index].x}deg) 
+              rotateY(${diceRotationStateList.value[index].y}deg) 
+              rotateZ(${diceRotationStateList.value[index].z}deg)`,
   };
 }
 
 function handleClick() {
-  if (!props.enable)
+  if (props.disable)
     return;
   emit('beforeRoll');
   roll();
 }
 
 // 获取指定面的点位置数组
-function getFaceDotPositions(face: keyof typeof FACE_DOT_POSITIONS) {
-  const currentNumber = face === 'front' ? results[0] : undefined;
+function getFaceDotPositions(face: keyof typeof FACE_DOT_POSITIONS, index: number) {
+  const currentNumber = face === 'front' ? results[index] : undefined;
   const positions = FACE_DOT_POSITIONS[face];
   return typeof positions === 'function' ? positions(currentNumber!) : positions;
 }
@@ -167,22 +152,22 @@ defineExpose({
     :style="containerStyle"
   >
     <div
-      v-for="(_, index) in Array(props.number)"
+      v-for="(_, index) in Array(props.amount)"
       :key="index"
       class="dice"
-      :class="{ rolling: rotates[index].running }"
-      :style="{ width: `${size / 16}rem`, height: `${size / 16}rem` }"
+      :class="{ rolling: diceRotationStateList[index].running }"
+      :style="{ width: `${size}rem`, height: `${size}rem` }"
       @click="handleClick"
     >
       <div class="dice-cube" :style="getCubeStyle(index)">
         <template v-for="face in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="face">
           <div class="face" :class="face">
             <div
-              v-for="position in getFaceDotPositions(face)"
+              v-for="position in getFaceDotPositions(face, index)"
               :key="position"
               class="dot"
               :class="position"
-              :style="{ width: `${dotSize / 16}rem`, height: `${dotSize / 16}rem` }"
+              :style="{ width: `${dotSize}rem`, height: `${dotSize}rem` }"
             />
           </div>
         </template>
@@ -198,7 +183,7 @@ defineExpose({
 }
 
 .dice {
-  perspective: 62.5rem;
+  perspective: 10000rem;
   cursor: pointer;
 }
 
@@ -223,33 +208,33 @@ defineExpose({
   border-radius: 10%;
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  gap: calc(v-bind(dotSize) / 16 * 1rem);
+  gap: calc(v-bind(dotSize) * 1rem);
   backface-visibility: visible;
   box-shadow: inset 0 0 0.9375rem rgba(0, 0, 0, 0.1);
 }
 
 .front {
-  transform: rotateY(0deg) translateZ(calc(v-bind(size) / 32 * 1rem));
+  transform: rotateY(0deg) translateZ(calc(v-bind(size) / 2 * 1rem));
 }
 
 .back {
-  transform: rotateY(180deg) translateZ(calc(v-bind(size) / 32 * 1rem));
+  transform: rotateY(180deg) translateZ(calc(v-bind(size) / 2 * 1rem));
 }
 
 .right {
-  transform: rotateY(90deg) translateZ(calc(v-bind(size) / 32 * 1rem));
+  transform: rotateY(90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
 }
 
 .left {
-  transform: rotateY(-90deg) translateZ(calc(v-bind(size) / 32 * 1rem));
+  transform: rotateY(-90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
 }
 
 .top {
-  transform: rotateX(90deg) translateZ(calc(v-bind(size) / 32 * 1rem));
+  transform: rotateX(90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
 }
 
 .bottom {
-  transform: rotateX(-90deg) translateZ(calc(v-bind(size) / 32 * 1rem));
+  transform: rotateX(-90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
 }
 
 .dot {
@@ -260,38 +245,38 @@ defineExpose({
 }
 
 .center {
-  top: calc(50% - v-bind(dotSize) / 32 * 1rem);
-  left: calc(50% - v-bind(dotSize) / 32 * 1rem);
+  top: calc(50% - v-bind(dotSize) / 2 * 1rem);
+  left: calc(50% - v-bind(dotSize) / 2 * 1rem);
 }
 
 .top-left {
-  top: calc(v-bind(size) * 0.1 / 16 * 1rem);
-  left: calc(v-bind(size) * 0.1 / 16 * 1rem);
+  top: calc(v-bind(size) * 0.1 * 1rem);
+  left: calc(v-bind(size) * 0.1 * 1rem);
 }
 
 .top-right {
-  top: calc(v-bind(size) * 0.1 / 16 * 1rem);
-  right: calc(v-bind(size) * 0.1 / 16 * 1rem);
+  top: calc(v-bind(size) * 0.1 * 1rem);
+  right: calc(v-bind(size) * 0.1 * 1rem);
 }
 
 .center-left {
-  top: calc(50% - v-bind(dotSize) / 32 * 1rem);
-  left: calc(v-bind(size) * 0.1 / 16 * 1rem);
+  top: calc(50% - v-bind(dotSize) / 2 * 1rem);
+  left: calc(v-bind(size) * 0.1 * 1rem);
 }
 
 .center-right {
-  top: calc(50% - v-bind(dotSize) / 32 * 1rem);
-  right: calc(v-bind(size) * 0.1 / 16 * 1rem);
+  top: calc(50% - v-bind(dotSize) / 2 * 1rem);
+  right: calc(v-bind(size) * 0.1 * 1rem);
 }
 
 .bottom-left {
-  bottom: calc(v-bind(size) * 0.1 / 16 * 1rem);
-  left: calc(v-bind(size) * 0.1 / 16 * 1rem);
+  bottom: calc(v-bind(size) * 0.1 * 1rem);
+  left: calc(v-bind(size) * 0.1 * 1rem);
 }
 
 .bottom-right {
-  bottom: calc(v-bind(size) * 0.1 / 16 * 1rem);
-  right: calc(v-bind(size) * 0.1 / 16 * 1rem);
+  bottom: calc(v-bind(size) * 0.1 * 1rem);
+  right: calc(v-bind(size) * 0.1 * 1rem);
 }
 
 @keyframes rolling {
