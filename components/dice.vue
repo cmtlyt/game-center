@@ -5,20 +5,20 @@
  */
 
 interface Props {
-  amount?: number; // 骰子数量
+  count?: number; // 骰子数量
   size?: number; // 骰子尺寸
   gap?: number; // 骰子之间的间距
   column?: number; // 每行骰子数量
-  disable?: boolean; // 是否禁用
+  disabled?: boolean; // 是否禁用
   duration?: number; // 动画时长
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  amount: 1,
+  count: 1,
   size: 100,
   gap: 10,
   column: 2,
-  disable: false,
+  disabled: false,
   duration: 1000,
 });
 
@@ -28,10 +28,10 @@ const emit = defineEmits<{
 }>();
 
 // 根据骰子数量初始化结果数组
-const results = Array.from({ length: props.amount }, () => 1);
+const results = Array.from({ length: props.count }, () => 1);
 
 // 存储每个骰子的旋转状态
-const diceRotationStateList = ref(Array.from({ length: props.amount }, () => ({
+const diceRotationStateList = ref(Array.from({ length: props.count }, () => ({
   x: 0,
   y: 0,
   z: 0,
@@ -66,24 +66,29 @@ async function roll() {
   if (diceRotationStateList.value.some(r => r.running))
     return;
 
-  const rollPromises = Array.from({ length: props.amount }, (_, index) => {
+  const rollPromises = Array.from({ length: props.count }, (_, index) => {
     return new Promise<number>((resolve) => {
       diceRotationStateList.value[index].running = true;
       const startTime = performance.now();
+      const finalResult = Math.floor(Math.random() * 6) + 1;
 
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
+        const progress = elapsed / props.duration;
 
         if (elapsed < props.duration) {
-          // 动画过程中的随机旋转
           diceRotationStateList.value[index].x = Math.random() * 360;
           diceRotationStateList.value[index].y = Math.random() * 360;
           diceRotationStateList.value[index].z = Math.random() * 360;
 
+          if (progress > 0.7) {
+            results[index] = finalResult;
+          }
+
           requestAnimationFrame(animate);
         }
         else {
-          results[index] = Math.floor(Math.random() * 6) + 1;
+          results[index] = finalResult;
           setFinalRotation(index, 'front');
           diceRotationStateList.value[index].running = false;
           resolve(results[index]);
@@ -123,7 +128,7 @@ function getCubeStyle(index: number) {
 }
 
 function handleClick() {
-  if (props.disable)
+  if (props.disabled)
     return;
   emit('beforeRoll');
   roll();
@@ -152,7 +157,7 @@ defineExpose({
     :style="containerStyle"
   >
     <div
-      v-for="(_, index) in Array(props.amount)"
+      v-for="(_, index) in Array(props.count)"
       :key="index"
       class="dice"
       :class="{ rolling: diceRotationStateList[index].running }"
@@ -183,7 +188,7 @@ defineExpose({
 }
 
 .dice {
-  perspective: 10000rem;
+  perspective: 250rem;
   cursor: pointer;
 }
 
