@@ -66,41 +66,56 @@ async function roll() {
   if (diceRotationStateList.value.some(r => r.running))
     return;
 
-  const rollPromises = Array.from({ length: props.count }, (_, index) => {
-    return new Promise<number>((resolve) => {
-      diceRotationStateList.value[index].running = true;
-      const startTime = performance.now();
-      const finalResult = Math.floor(Math.random() * 6) + 1;
+  // 提前生成所有骰子的最终结果
+  const finalResults = Array.from({ length: props.count }, () => Math.floor(Math.random() * 6) + 1);
 
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        const progress = elapsed / props.duration;
+  // 将所有骰子状态设为运行中
+  for (let i = 0; i < props.count; i++) {
+    diceRotationStateList.value[i].running = true;
+  }
 
-        if (elapsed < props.duration) {
-          diceRotationStateList.value[index].x = Math.random() * 360;
-          diceRotationStateList.value[index].y = Math.random() * 360;
-          diceRotationStateList.value[index].z = Math.random() * 360;
+  // 启动动画
+  const startTime = performance.now();
 
-          if (progress > 0.7) {
-            results[index] = finalResult;
-          }
+  // 创建动画函数
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - startTime;
+    const progress = elapsed / props.duration;
 
-          requestAnimationFrame(animate);
-        }
-        else {
-          results[index] = finalResult;
-          setFinalRotation(index, 'front');
-          diceRotationStateList.value[index].running = false;
-          resolve(results[index]);
-        }
-      };
+    // 更新所有骰子的旋转状态
+    for (let i = 0; i < props.count; i++) {
+      diceRotationStateList.value[i].x = Math.random() * 360;
+      diceRotationStateList.value[i].y = Math.random() * 360;
+      diceRotationStateList.value[i].z = Math.random() * 360;
 
+      // 在70%的动画进度后显示最终结果
+      if (progress > 0.1) {
+        results[i] = finalResults[i];
+      }
+    }
+
+    // 动画继续运行直到完成
+    if (elapsed < props.duration) {
       requestAnimationFrame(animate);
-    });
-  });
+    }
+    else {
+      // 动画结束，设置最终旋转状态
+      for (let i = 0; i < props.count; i++) {
+        results[i] = finalResults[i];
+        setFinalRotation(i, 'front');
+        diceRotationStateList.value[i].running = false;
+      }
+    }
+  };
 
-  await Promise.all(rollPromises);
-  emit('finish', [...results]);
+  requestAnimationFrame(animate);
+
+  return new Promise<number[]>((resolve) => {
+    setTimeout(() => {
+      emit('finish', [...finalResults]);
+      resolve([...finalResults]);
+    }, props.duration);
+  });
 }
 
 // 设置最终旋转角度使指定面朝上
