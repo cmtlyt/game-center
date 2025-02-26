@@ -66,6 +66,8 @@ async function roll() {
   if (diceRotationStateList.value.some(r => r.running))
     return;
 
+  emit('beforeRoll');
+
   // 提前生成所有骰子的最终结果
   const finalResults = Array.from({ length: props.count }, () => Math.floor(Math.random() * 6) + 1);
 
@@ -74,63 +76,23 @@ async function roll() {
     diceRotationStateList.value[i].running = true;
   }
 
-  // 启动动画
-  const startTime = performance.now();
-
-  // 创建动画函数
-  const animate = (currentTime: number) => {
-    const elapsed = currentTime - startTime;
-    const progress = elapsed / props.duration;
-
-    // 更新所有骰子的旋转状态
+  // 在动画中期预先设置最终结果，避免结束时闪烁
+  setTimeout(() => {
     for (let i = 0; i < props.count; i++) {
-      diceRotationStateList.value[i].x = Math.random() * 360;
-      diceRotationStateList.value[i].y = Math.random() * 360;
-      diceRotationStateList.value[i].z = Math.random() * 360;
-
-      // 在70%的动画进度后显示最终结果
-      if (progress > 0.1) {
-        results[i] = finalResults[i];
-      }
+      results[i] = finalResults[i];
     }
-
-    // 动画继续运行直到完成
-    if (elapsed < props.duration) {
-      requestAnimationFrame(animate);
-    }
-    else {
-      // 动画结束，设置最终旋转状态
-      for (let i = 0; i < props.count; i++) {
-        results[i] = finalResults[i];
-        setFinalRotation(i, 'front');
-        diceRotationStateList.value[i].running = false;
-      }
-    }
-  };
-
-  requestAnimationFrame(animate);
-
+  }, 0);
   return new Promise<number[]>((resolve) => {
     setTimeout(() => {
+      // 动画结束，设置最终旋转状态
+      for (let i = 0; i < props.count; i++) {
+        diceRotationStateList.value[i].running = false;
+      }
+
       emit('finish', [...finalResults]);
       resolve([...finalResults]);
     }, props.duration);
   });
-}
-
-// 设置最终旋转角度使指定面朝上
-function setFinalRotation(index: number, face: keyof typeof FACE_DOT_POSITIONS) {
-  const rotationMap = {
-    front: { x: 0, y: 0, z: 0 },
-    back: { x: 0, y: 180, z: 0 },
-    right: { x: 0, y: 90, z: 0 },
-    left: { x: 0, y: -90, z: 0 },
-    top: { x: 90, y: 0, z: 0 },
-    bottom: { x: -90, y: 0, z: 0 },
-  };
-
-  const rotation = rotationMap[face];
-  diceRotationStateList.value[index] = { ...rotation, running: false };
 }
 
 // 修改骰子旋转样式计算
@@ -171,6 +133,7 @@ defineExpose({
     class="dice-container"
     :style="containerStyle"
   >
+    {{ diceRotationStateList }}
     <div
       v-for="(_, index) in Array(props.count)"
       :key="index"
@@ -212,11 +175,12 @@ defineExpose({
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.3s ease-out;
+  transition: transform 0.5s ease-out;
 }
 
 .dice.rolling .dice-cube {
   animation: rolling 2s ease-in-out;
+  animation-fill-mode: forwards;
 }
 
 .face {
@@ -311,6 +275,9 @@ defineExpose({
   }
   75% {
     transform: rotateX(1080deg) rotateY(540deg) rotateZ(270deg);
+  }
+  85% {
+    transform: rotateX(1260deg) rotateY(630deg) rotateZ(315deg);
   }
   100% {
     transform: rotateX(1440deg) rotateY(720deg) rotateZ(360deg);
