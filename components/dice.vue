@@ -31,10 +31,12 @@ const emit = defineEmits<{
 const results = Array.from({ length: props.count }, () => 1);
 
 // 存储每个骰子的旋转状态
-const diceRotationStateList = ref(Array.from({ length: props.count }, () => ({
-  running: false,
-})));
+const isRolling = ref(false);
 
+/**
+ * 骰子各点数对应的点的位置定义
+ * 键为点数(1-6)，值为点的位置数组
+ */
 const DICE_NUMBER_POSITIONS = {
   1: ['center'],
   2: ['top-left', 'bottom-right'],
@@ -44,44 +46,39 @@ const DICE_NUMBER_POSITIONS = {
   6: ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'],
 } as const;
 
-const COMMON_SIX_DOTS = ['top-left', 'top-right', 'center-left', 'center-right', 'bottom-left', 'bottom-right'] as const;
-
+/**
+ * 骰子各个面的点位置定义
+ */
 const FACE_DOT_POSITIONS = {
   front: (num: number) => DICE_NUMBER_POSITIONS[num as keyof typeof DICE_NUMBER_POSITIONS] || [],
-  back: COMMON_SIX_DOTS,
+  back: DICE_NUMBER_POSITIONS[6],
   right: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
-  left: COMMON_SIX_DOTS,
-  top: COMMON_SIX_DOTS,
-  bottom: COMMON_SIX_DOTS,
+  left: DICE_NUMBER_POSITIONS[6],
+  top: DICE_NUMBER_POSITIONS[6],
+  bottom: DICE_NUMBER_POSITIONS[6],
 } as const;
 
-// 点渲染大小
+/** 点渲染大小 */
 const dotSize = props.size * 0.15;
 
 // 骰子投掷动画
 async function roll() {
-  if (diceRotationStateList.value.some(r => r.running))
+  if (isRolling.value)
     return;
 
-  emit('beforeRoll');
-
-  // 提前生成所有骰子的最终结果
-  const finalResults = Array.from({ length: props.count }, () => Math.floor(Math.random() * 6) + 1);
+  isRolling.value = true;
 
   for (let i = 0; i < props.count; i++) {
-    diceRotationStateList.value[i].running = true;
-    results[i] = finalResults[i];
+    results[i] = Math.floor(Math.random() * 6) + 1;
   }
 
   return new Promise<number[]>((resolve) => {
     setTimeout(() => {
       // 动画结束，设置最终旋转状态
-      for (let i = 0; i < props.count; i++) {
-        diceRotationStateList.value[i].running = false;
-      }
+      isRolling.value = false;
 
-      emit('finish', [...finalResults]);
-      resolve([...finalResults]);
+      emit('finish', [...results]);
+      resolve([...results]);
     }, props.duration);
   });
 }
@@ -100,11 +97,6 @@ function getFaceDotPositions(face: keyof typeof FACE_DOT_POSITIONS, index: numbe
   return typeof positions === 'function' ? positions(currentNumber!) : positions;
 }
 
-const containerStyle = computed(() => ({
-  gap: `${props.gap}px`,
-  gridTemplateColumns: `repeat(${props.column}, 1fr)`,
-}));
-
 defineExpose({
   roll,
 });
@@ -113,24 +105,27 @@ defineExpose({
 <template>
   <div
     class="dice-container"
-    :style="containerStyle"
+    :style="{
+      gap: `${props.gap}px`,
+      gridTemplateColumns: `repeat(${props.column}, 1fr)`,
+    }"
   >
     <div
       v-for="(_, index) in Array(props.count)"
       :key="index"
       class="dice"
-      :class="{ rolling: diceRotationStateList[index].running }"
+      :class="{ rolling: isRolling }"
       :style="{ width: `${size}rem`, height: `${size}rem` }"
       @click="handleClick"
     >
       <div class="dice-cube">
-        <template v-for="face in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="face">
-          <div class="face" :class="face">
+        <template v-for="nowFace in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="nowFace">
+          <div class="face" :class="[nowFace]">
             <div
-              v-for="position in getFaceDotPositions(face, index)"
+              v-for="position in getFaceDotPositions(nowFace, index)"
               :key="position"
               class="dot"
-              :class="position"
+              :class="[position]"
               :style="{ width: `${dotSize}rem`, height: `${dotSize}rem` }"
             />
           </div>
@@ -149,6 +144,9 @@ defineExpose({
 .dice {
   perspective: 250rem;
   cursor: pointer;
+  --dice-half-size: calc(v-bind(size) / 2 * 1rem);
+  --dice-padding: calc(v-bind(size) * 0.1 * 1rem);
+  --dot-center-offset: calc(50% - v-bind(dotSize) / 2 * 1rem);
 }
 
 .dice-cube {
@@ -179,27 +177,27 @@ defineExpose({
 }
 
 .front {
-  transform: rotateY(0deg) translateZ(calc(v-bind(size) / 2 * 1rem));
+  transform: rotateY(0deg) translateZ(var(--dice-half-size));
 }
 
 .back {
-  transform: rotateY(180deg) translateZ(calc(v-bind(size) / 2 * 1rem));
+  transform: rotateY(180deg) translateZ(var(--dice-half-size));
 }
 
 .right {
-  transform: rotateY(90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
+  transform: rotateY(90deg) translateZ(var(--dice-half-size));
 }
 
 .left {
-  transform: rotateY(-90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
+  transform: rotateY(-90deg) translateZ(var(--dice-half-size));
 }
 
 .top {
-  transform: rotateX(90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
+  transform: rotateX(90deg) translateZ(var(--dice-half-size));
 }
 
 .bottom {
-  transform: rotateX(-90deg) translateZ(calc(v-bind(size) / 2 * 1rem));
+  transform: rotateX(-90deg) translateZ(var(--dice-half-size));
 }
 
 .dot {
@@ -210,40 +208,41 @@ defineExpose({
 }
 
 .center {
-  top: calc(50% - v-bind(dotSize) / 2 * 1rem);
-  left: calc(50% - v-bind(dotSize) / 2 * 1rem);
+  top: var(--dot-center-offset);
+  left: var(--dot-center-offset);
 }
 
 .top-left {
-  top: calc(v-bind(size) * 0.1 * 1rem);
-  left: calc(v-bind(size) * 0.1 * 1rem);
+  top: var(--dice-padding);
+  left: var(--dice-padding);
 }
 
 .top-right {
-  top: calc(v-bind(size) * 0.1 * 1rem);
-  right: calc(v-bind(size) * 0.1 * 1rem);
+  top: var(--dice-padding);
+  right: var(--dice-padding);
 }
 
 .center-left {
-  top: calc(50% - v-bind(dotSize) / 2 * 1rem);
-  left: calc(v-bind(size) * 0.1 * 1rem);
+  top: var(--dot-center-offset);
+  left: var(--dice-padding);
 }
 
 .center-right {
-  top: calc(50% - v-bind(dotSize) / 2 * 1rem);
-  right: calc(v-bind(size) * 0.1 * 1rem);
+  top: var(--dot-center-offset);
+  right: var(--dice-padding);
 }
 
 .bottom-left {
-  bottom: calc(v-bind(size) * 0.1 * 1rem);
-  left: calc(v-bind(size) * 0.1 * 1rem);
+  bottom: var(--dice-padding);
+  left: var(--dice-padding);
 }
 
 .bottom-right {
-  bottom: calc(v-bind(size) * 0.1 * 1rem);
-  right: calc(v-bind(size) * 0.1 * 1rem);
+  bottom: var(--dice-padding);
+  right: var(--dice-padding);
 }
 
+// ... existing code ...
 @keyframes rolling {
   0% {
     transform: rotateX(0) rotateY(0) rotateZ(0);
@@ -255,13 +254,11 @@ defineExpose({
     transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
   }
   75% {
-    transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg);
+    transform: rotateX(540deg) rotateY(270deg) rotateZ(45deg);
   }
-  85% {
-    transform: rotateX(630deg) rotateY(315deg) rotateZ(157.5deg);
-  }
+
   100% {
-    transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg);
+    transform: rotateX(720deg) rotateY(360deg) rotateZ(0);
   }
 }
 </style>
