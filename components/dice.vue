@@ -52,7 +52,7 @@ const DICE_NUMBER_POSITIONS = {
 const FACE_DOT_POSITIONS = {
   front: (num: number) => DICE_NUMBER_POSITIONS[num as keyof typeof DICE_NUMBER_POSITIONS] || [],
   back: DICE_NUMBER_POSITIONS[6],
-  right: ['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'],
+  right: DICE_NUMBER_POSITIONS[5],
   left: DICE_NUMBER_POSITIONS[6],
   top: DICE_NUMBER_POSITIONS[6],
   bottom: DICE_NUMBER_POSITIONS[6],
@@ -111,7 +111,7 @@ defineExpose({
     }"
   >
     <div
-      v-for="(_, index) in Array(props.count)"
+      v-for="(_, index) in props.count"
       :key="index"
       class="dice"
       :class="{ rolling: isRolling }"
@@ -158,8 +158,10 @@ defineExpose({
 }
 
 .dice.rolling .dice-cube {
-  animation: rolling calc(v-bind(duration) * 1ms) infinite;
+  animation: rolling 1s cubic-bezier(0.17, 0.67, 0.83, 0.67) infinite;
   animation-fill-mode: forwards;
+  animation-duration: 1s; /* 固定旋转周期为1秒 */
+  animation-iteration-count: calc(v-bind(duration) / 1000); /* 根据总时长计算循环次数 */
 }
 
 .face {
@@ -242,23 +244,49 @@ defineExpose({
   right: var(--dice-padding);
 }
 
-// ... existing code ...
 @keyframes rolling {
   0% {
-    transform: rotateX(0) rotateY(0) rotateZ(0);
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
-  25% {
-    transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg);
+
+  10% {
+    transform: rotateX(72deg) rotateY(36deg) rotateZ(18deg);
   }
+
+  20% {
+    transform: rotateX(144deg) rotateY(72deg) rotateZ(36deg);
+  }
+
+  30% {
+    transform: rotateX(216deg) rotateY(108deg) rotateZ(54deg);
+  }
+
+  40% {
+    transform: rotateX(288deg) rotateY(144deg) rotateZ(72deg);
+  }
+
   50% {
     transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
   }
-  75% {
-    transform: rotateX(540deg) rotateY(270deg) rotateZ(45deg);
+
+  60% {
+    transform: rotateX(432deg) rotateY(216deg) rotateZ(72deg);
+  }
+
+  70% {
+    transform: rotateX(504deg) rotateY(252deg) rotateZ(54deg);
+  }
+
+  80% {
+    transform: rotateX(576deg) rotateY(288deg) rotateZ(36deg);
+  }
+
+  90% {
+    transform: rotateX(648deg) rotateY(324deg) rotateZ(18deg);
   }
 
   100% {
-    transform: rotateX(720deg) rotateY(360deg) rotateZ(0);
+    transform: rotateX(720deg) rotateY(360deg) rotateZ(0deg);
   }
 }
 </style>
