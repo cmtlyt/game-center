@@ -32,9 +32,6 @@ const results = Array.from({ length: props.count }, () => 1);
 
 // 存储每个骰子的旋转状态
 const diceRotationStateList = ref(Array.from({ length: props.count }, () => ({
-  x: 0,
-  y: 0,
-  z: 0,
   running: false,
 })));
 
@@ -71,17 +68,11 @@ async function roll() {
   // 提前生成所有骰子的最终结果
   const finalResults = Array.from({ length: props.count }, () => Math.floor(Math.random() * 6) + 1);
 
-  // 将所有骰子状态设为运行中
   for (let i = 0; i < props.count; i++) {
     diceRotationStateList.value[i].running = true;
+    results[i] = finalResults[i];
   }
 
-  // 在动画中期预先设置最终结果，避免结束时闪烁
-  setTimeout(() => {
-    for (let i = 0; i < props.count; i++) {
-      results[i] = finalResults[i];
-    }
-  }, 0);
   return new Promise<number[]>((resolve) => {
     setTimeout(() => {
       // 动画结束，设置最终旋转状态
@@ -93,15 +84,6 @@ async function roll() {
       resolve([...finalResults]);
     }, props.duration);
   });
-}
-
-// 修改骰子旋转样式计算
-function getCubeStyle(index: number) {
-  return {
-    transform: `rotateX(${diceRotationStateList.value[index].x}deg) 
-              rotateY(${diceRotationStateList.value[index].y}deg) 
-              rotateZ(${diceRotationStateList.value[index].z}deg)`,
-  };
 }
 
 function handleClick() {
@@ -133,7 +115,6 @@ defineExpose({
     class="dice-container"
     :style="containerStyle"
   >
-    {{ diceRotationStateList }}
     <div
       v-for="(_, index) in Array(props.count)"
       :key="index"
@@ -142,7 +123,7 @@ defineExpose({
       :style="{ width: `${size}rem`, height: `${size}rem` }"
       @click="handleClick"
     >
-      <div class="dice-cube" :style="getCubeStyle(index)">
+      <div class="dice-cube">
         <template v-for="face in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="face">
           <div class="face" :class="face">
             <div
@@ -179,7 +160,7 @@ defineExpose({
 }
 
 .dice.rolling .dice-cube {
-  animation: rolling 2s ease-in-out;
+  animation: rolling calc(v-bind(duration) * 1ms) infinite;
   animation-fill-mode: forwards;
 }
 
@@ -268,19 +249,19 @@ defineExpose({
     transform: rotateX(0) rotateY(0) rotateZ(0);
   }
   25% {
-    transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
+    transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg);
   }
   50% {
-    transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg);
+    transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
   }
   75% {
-    transform: rotateX(1080deg) rotateY(540deg) rotateZ(270deg);
+    transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg);
   }
   85% {
-    transform: rotateX(1260deg) rotateY(630deg) rotateZ(315deg);
+    transform: rotateX(630deg) rotateY(315deg) rotateZ(157.5deg);
   }
   100% {
-    transform: rotateX(1440deg) rotateY(720deg) rotateZ(360deg);
+    transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg);
   }
 }
 </style>
