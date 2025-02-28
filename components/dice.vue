@@ -110,7 +110,6 @@ defineExpose({
   <div
     class="dice-container"
     :style="{
-      'gap': `${props.gap}px`,
       'gridTemplateColumns': `repeat(${props.column}, 1fr)`,
       '--dice-size': `${size}rem`,
       '--dice-half-size': diceHalfSize,
@@ -118,6 +117,7 @@ defineExpose({
       '--dot-size': dotSizeRem,
       '--dot-center-offset': dotCenterOffset,
       '--animation-iteration-count': animationIterationCount,
+      '--gap': `${props.gap}px`,
     }"
   >
     <div
@@ -147,6 +147,7 @@ defineExpose({
 .dice-container {
   display: grid;
   width: fit-content;
+  gap: var(--gap);
 }
 
 .dice {
