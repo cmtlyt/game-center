@@ -63,9 +63,6 @@ const dotSize = props.size * 0.15;
 
 // 骰子投掷动画
 async function roll() {
-  if (isRolling.value)
-    return;
-
   isRolling.value = true;
 
   for (let i = 0; i < props.count; i++) {
@@ -158,10 +155,11 @@ defineExpose({
 }
 
 .dice.rolling .dice-cube {
-  animation: rolling 1s cubic-bezier(0.17, 0.67, 0.83, 0.67) infinite;
+  animation-name: rolling;
+  animation-timing-function: cubic-bezier(0.17, 0.67, 0.83, 0.67);
+  animation-duration: 0.6s;
+  animation-iteration-count: calc(v-bind(duration) / 600);
   animation-fill-mode: forwards;
-  animation-duration: 1s; /* 固定旋转周期为1秒 */
-  animation-iteration-count: calc(v-bind(duration) / 1000); /* 根据总时长计算循环次数 */
 }
 
 .face {
@@ -245,48 +243,10 @@ defineExpose({
 }
 
 @keyframes rolling {
-  0% {
-    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
-  }
-
-  10% {
-    transform: rotateX(72deg) rotateY(36deg) rotateZ(18deg);
-  }
-
-  20% {
-    transform: rotateX(144deg) rotateY(72deg) rotateZ(36deg);
-  }
-
-  30% {
-    transform: rotateX(216deg) rotateY(108deg) rotateZ(54deg);
-  }
-
-  40% {
-    transform: rotateX(288deg) rotateY(144deg) rotateZ(72deg);
-  }
-
-  50% {
-    transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
-  }
-
-  60% {
-    transform: rotateX(432deg) rotateY(216deg) rotateZ(72deg);
-  }
-
-  70% {
-    transform: rotateX(504deg) rotateY(252deg) rotateZ(54deg);
-  }
-
-  80% {
-    transform: rotateX(576deg) rotateY(288deg) rotateZ(36deg);
-  }
-
-  90% {
-    transform: rotateX(648deg) rotateY(324deg) rotateZ(18deg);
-  }
-
-  100% {
-    transform: rotateX(720deg) rotateY(360deg) rotateZ(0deg);
+  @for $i from 0 through 10 {
+    #{($i * 10) + '%'} {
+      transform: rotateX(#{$i * 72}deg) rotateY(#{$i * 36}deg) rotateZ(#{$i * 18}deg);
+    }
   }
 }
 </style>
