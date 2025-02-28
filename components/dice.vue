@@ -64,8 +64,6 @@ const dicePadding = `${props.size * 0.1}rem`;
 const dotSize = props.size * 0.15;
 const dotSizeRem = `${dotSize}rem`;
 const dotCenterOffset = `calc(50% - ${dotSizeRem} / 2)`;
-
-// 新增：动画相关的计算属性
 const animationIterationCount = props.duration / 600;
 
 // 骰子投掷动画
@@ -114,10 +112,12 @@ defineExpose({
     :style="{
       'gap': `${props.gap}px`,
       'gridTemplateColumns': `repeat(${props.column}, 1fr)`,
+      '--dice-size': `${size}rem`,
       '--dice-half-size': diceHalfSize,
       '--dice-padding': dicePadding,
       '--dot-size': dotSizeRem,
       '--dot-center-offset': dotCenterOffset,
+      '--animation-iteration-count': animationIterationCount,
     }"
   >
     <div
@@ -125,11 +125,6 @@ defineExpose({
       :key="index"
       class="dice"
       :class="{ rolling: currentRoll }"
-      :style="{
-        'width': `${size}rem`,
-        'height': `${size}rem`,
-        '--animation-iteration-count': animationIterationCount,
-      }"
       @click="handleClick"
     >
       <div class="dice-cube">
@@ -140,7 +135,6 @@ defineExpose({
               :key="position"
               class="dot"
               :class="[position]"
-              :style="{ width: 'var(--dot-size)', height: 'var(--dot-size)' }"
             />
           </div>
         </template>
@@ -158,6 +152,8 @@ defineExpose({
 .dice {
   perspective: 250rem;
   cursor: pointer;
+  width: var(--dice-size);
+  height: var(--dice-size);
 }
 
 .dice-cube {
@@ -216,6 +212,8 @@ defineExpose({
 }
 
 .dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
   position: absolute;
   background: #333;
   border-radius: 50%;
