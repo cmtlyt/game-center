@@ -33,6 +33,9 @@ const results = Array.from({ length: props.count }, () => 1);
 // 存储每个骰子的旋转状态
 const isRolling = ref(false);
 
+// 当前正在执行的 Promise
+let currentRoll: Promise<number[]> | null = null;
+
 /**
  * 骰子各点数对应的点的位置定义
  * 键为点数(1-6)，值为点的位置数组
@@ -63,21 +66,27 @@ const dotSize = props.size * 0.15;
 
 // 骰子投掷动画
 async function roll() {
+  if (isRolling.value && currentRoll) {
+    return currentRoll;
+  }
+
   isRolling.value = true;
 
   for (let i = 0; i < props.count; i++) {
     results[i] = Math.floor(Math.random() * 6) + 1;
   }
 
-  return new Promise<number[]>((resolve) => {
+  currentRoll = new Promise<number[]>((resolve) => {
     setTimeout(() => {
-      // 动画结束，设置最终旋转状态
       isRolling.value = false;
+      currentRoll = null;
 
       emit('finish', [...results]);
       resolve([...results]);
     }, props.duration);
   });
+
+  return currentRoll;
 }
 
 function handleClick() {
@@ -160,6 +169,7 @@ defineExpose({
   animation-duration: 0.6s;
   animation-iteration-count: calc(v-bind(duration) / 600);
   animation-fill-mode: forwards;
+  cursor: not-allowed;
 }
 
 .face {
