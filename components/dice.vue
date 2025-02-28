@@ -30,11 +30,8 @@ const emit = defineEmits<{
 // 根据骰子数量初始化结果数组
 const results = Array.from({ length: props.count }, () => 1);
 
-// 存储每个骰子的旋转状态
-const isRolling = ref(false);
-
 // 当前正在执行的 Promise
-let currentRoll: Promise<number[]> | null = null;
+const currentRoll = ref<Promise<number[]>>();
 
 /**
  * 骰子各点数对应的点的位置定义
@@ -61,28 +58,28 @@ const FACE_DOT_POSITIONS = {
   bottom: DICE_NUMBER_POSITIONS[6],
 } as const;
 
-/** 点渲染大小 */
+// CSS 变量
+const diceHalfSize = `${props.size / 2}rem`;
+const dicePadding = `${props.size * 0.1}rem`;
 const dotSize = props.size * 0.15;
+const dotSizeRem = `${dotSize}rem`;
+const dotCenterOffset = `calc(50% - ${dotSizeRem} / 2)`;
 
 // 骰子投掷动画
 async function roll() {
-  if (isRolling.value && currentRoll) {
-    return currentRoll;
+  if (currentRoll.value) {
+    return currentRoll.value;
   }
-
-  isRolling.value = true;
 
   for (let i = 0; i < props.count; i++) {
     results[i] = Math.floor(Math.random() * 6) + 1;
   }
 
-  currentRoll = new Promise<number[]>((resolve) => {
+  currentRoll.value = new Promise<number[]>((resolve) => {
     setTimeout(() => {
-      isRolling.value = false;
-      currentRoll = null;
-
       emit('finish', [...results]);
       resolve([...results]);
+      currentRoll.value = undefined;
     }, props.duration);
   });
 
@@ -112,15 +109,19 @@ defineExpose({
   <div
     class="dice-container"
     :style="{
-      gap: `${props.gap}px`,
-      gridTemplateColumns: `repeat(${props.column}, 1fr)`,
+      'gap': `${props.gap}px`,
+      'gridTemplateColumns': `repeat(${props.column}, 1fr)`,
+      '--dice-half-size': diceHalfSize,
+      '--dice-padding': dicePadding,
+      '--dot-size': dotSizeRem,
+      '--dot-center-offset': dotCenterOffset,
     }"
   >
     <div
       v-for="(_, index) in props.count"
       :key="index"
       class="dice"
-      :class="{ rolling: isRolling }"
+      :class="{ rolling: currentRoll }"
       :style="{ width: `${size}rem`, height: `${size}rem` }"
       @click="handleClick"
     >
@@ -132,7 +133,7 @@ defineExpose({
               :key="position"
               class="dot"
               :class="[position]"
-              :style="{ width: `${dotSize}rem`, height: `${dotSize}rem` }"
+              :style="{ width: 'var(--dot-size)', height: 'var(--dot-size)' }"
             />
           </div>
         </template>
@@ -150,9 +151,6 @@ defineExpose({
 .dice {
   perspective: 250rem;
   cursor: pointer;
-  --dice-half-size: calc(v-bind(size) / 2 * 1rem);
-  --dice-padding: calc(v-bind(size) * 0.1 * 1rem);
-  --dot-center-offset: calc(50% - v-bind(dotSize) / 2 * 1rem);
 }
 
 .dice-cube {
