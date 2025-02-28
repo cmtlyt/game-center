@@ -31,7 +31,7 @@ const emit = defineEmits<{
 const results = Array.from({ length: props.count }, () => 1);
 
 // 当前正在执行的 Promise
-const currentRoll = ref<Promise<number[]>>();
+const currentRoll = shallowRef<Promise<number[]>>();
 
 /**
  * 骰子各点数对应的点的位置定义
@@ -64,6 +64,9 @@ const dicePadding = `${props.size * 0.1}rem`;
 const dotSize = props.size * 0.15;
 const dotSizeRem = `${dotSize}rem`;
 const dotCenterOffset = `calc(50% - ${dotSizeRem} / 2)`;
+
+// 新增：动画相关的计算属性
+const animationIterationCount = props.duration / 600;
 
 // 骰子投掷动画
 async function roll() {
@@ -122,7 +125,11 @@ defineExpose({
       :key="index"
       class="dice"
       :class="{ rolling: currentRoll }"
-      :style="{ width: `${size}rem`, height: `${size}rem` }"
+      :style="{
+        'width': `${size}rem`,
+        'height': `${size}rem`,
+        '--animation-iteration-count': animationIterationCount,
+      }"
       @click="handleClick"
     >
       <div class="dice-cube">
@@ -165,7 +172,7 @@ defineExpose({
   animation-name: rolling;
   animation-timing-function: cubic-bezier(0.17, 0.67, 0.83, 0.67);
   animation-duration: 0.6s;
-  animation-iteration-count: calc(v-bind(duration) / 600);
+  animation-iteration-count: var(--animation-iteration-count);
   animation-fill-mode: forwards;
   cursor: not-allowed;
 }
@@ -179,7 +186,7 @@ defineExpose({
   border-radius: 10%;
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  gap: calc(v-bind(dotSize) * 1rem);
+  gap: calc(var(--dot-size) * 1);
   backface-visibility: visible;
   box-shadow: inset 0 0 0.9375rem rgba(0, 0, 0, 0.1);
 }
