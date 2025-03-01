@@ -60,10 +60,6 @@ const FACE_DOT_POSITIONS = {
 
 // CSS 变量
 const diceHalfSize = `${props.size / 2}rem`;
-const dicePadding = `${props.size * 0.1}rem`;
-const dotSize = props.size * 0.15;
-const dotSizeRem = `${dotSize}rem`;
-const dotCenterOffset = `calc(50% - ${dotSizeRem} / 2)`;
 const animationIterationCount = props.duration / 600;
 
 // 骰子投掷动画
@@ -113,9 +109,8 @@ defineExpose({
       'gridTemplateColumns': `repeat(${props.column}, 1fr)`,
       '--dice-size': `${size}rem`,
       '--dice-half-size': diceHalfSize,
-      '--dice-padding': dicePadding,
-      '--dot-size': dotSizeRem,
-      '--dot-center-offset': dotCenterOffset,
+      '--dot-size': '15%',
+      '--dice-padding': '10%',
       '--animation-iteration-count': animationIterationCount,
       '--gap': `${props.gap}px`,
     }"
@@ -183,7 +178,7 @@ defineExpose({
   border-radius: 10%;
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  gap: calc(var(--dot-size) * 1);
+  gap: var(--dot-size);
   backface-visibility: visible;
   box-shadow: inset 0 0 0.9375rem rgba(0, 0, 0, 0.1);
 }
@@ -218,12 +213,11 @@ defineExpose({
   position: absolute;
   background: #333;
   border-radius: 50%;
-  grid-area: var(--position);
 }
 
 .center {
-  top: var(--dot-center-offset);
-  left: var(--dot-center-offset);
+  top: calc(50% - var(--dot-size) / 2);
+  left: calc(50% - var(--dot-size) / 2);
 }
 
 .top-left {
@@ -237,12 +231,12 @@ defineExpose({
 }
 
 .center-left {
-  top: var(--dot-center-offset);
+  top: calc(50% - var(--dot-size) / 2);
   left: var(--dice-padding);
 }
 
 .center-right {
-  top: var(--dot-center-offset);
+  top: calc(50% - var(--dot-size) / 2);
   right: var(--dice-padding);
 }
 
