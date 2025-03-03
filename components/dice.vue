@@ -102,13 +102,12 @@ defineExpose({
 <template>
   <div
     class="dice-container" :style="{
-      'gridTemplateColumns': `repeat(${props.column}, 1fr)`,
-      '--dice-size': `${size}rem`,
+      'gridTemplateColumns': `repeat(${props.column}, ${size}rem)`,
       '--dice-half-size': `${props.size / 2}rem`,
       '--dot-size': '15%',
       '--dice-padding': '10%',
-      '--animation-iteration-count': props.duration / 600,
-      '--gap': `${props.gap}px`,
+      '--animation-iteration-count': Math.round(props.duration / 600),
+      'gap': `${props.gap}rem`,
     }"
   >
     <div
@@ -133,14 +132,12 @@ defineExpose({
 .dice-container {
   display: grid;
   width: fit-content;
-  gap: var(--gap);
 }
 
 .dice {
   perspective: 250rem;
   cursor: pointer;
-  width: var(--dice-size);
-  height: var(--dice-size);
+  aspect-ratio: 1/1;
 }
 
 .dice-cube {
