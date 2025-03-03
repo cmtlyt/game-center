@@ -58,10 +58,6 @@ const FACE_DOT_POSITIONS = {
   bottom: DICE_NUMBER_POSITIONS[6],
 } as const;
 
-// CSS 变量
-const diceHalfSize = `${props.size / 2}rem`;
-const animationIterationCount = props.duration / 600;
-
 // 骰子投掷动画
 async function roll() {
   if (currentRoll.value) {
@@ -104,31 +100,25 @@ defineExpose({
 
 <template>
   <div
-    class="dice-container"
-    :style="{
+    class="dice-container" :style="{
       'gridTemplateColumns': `repeat(${props.column}, 1fr)`,
       '--dice-size': `${size}rem`,
-      '--dice-half-size': diceHalfSize,
+      '--dice-half-size': `${props.size / 2}rem`,
       '--dot-size': '15%',
       '--dice-padding': '10%',
-      '--animation-iteration-count': animationIterationCount,
+      '--animation-iteration-count': props.duration / 600,
       '--gap': `${props.gap}px`,
     }"
   >
     <div
-      v-for="(_, index) in props.count"
-      :key="index"
-      class="dice"
-      :class="{ rolling: currentRoll }"
+      v-for="(_, index) in props.count" :key="index" class="dice" :class="{ rolling: currentRoll }"
       @click="handleClick"
     >
       <div class="dice-cube">
         <template v-for="nowFace in ['front', 'back', 'right', 'left', 'top', 'bottom'] as const" :key="nowFace">
           <div class="face" :class="[nowFace]">
             <div
-              v-for="position in getFaceDotPositions(nowFace, index)"
-              :key="position"
-              class="dot"
+              v-for="position in getFaceDotPositions(nowFace, index)" :key="position" class="dot"
               :class="[position]"
             />
           </div>
@@ -176,10 +166,7 @@ defineExpose({
   background: white;
   border: 0.125rem solid #e0e0e0;
   border-radius: 10%;
-  display: grid;
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  gap: var(--dot-size);
-  backface-visibility: visible;
+  backface-visibility: hidden;
   box-shadow: inset 0 0 0.9375rem rgba(0, 0, 0, 0.1);
 }
 
