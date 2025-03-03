@@ -42,7 +42,9 @@
     "eslint-plugin-format": "^1.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.2",
-    "nuxt-security": "^2.1.5"
+    "nuxt-security": "^2.1.5",
+    "sass": "^1.85.0",
+    "sass-loader": "^16.0.5"
   },
   "lint-staged": {
     "*.{ts,vue}": [

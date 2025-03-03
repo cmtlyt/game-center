@@ -29,7 +29,9 @@ useHead({
   <NuxtPage />
 </template>
 
-<style>
+<style lang="scss">
+@use '@/assets/styles/main.scss' as *;
+
 .page-enter-active,
 .page-leave-active {
   transition: all 0.4s;
