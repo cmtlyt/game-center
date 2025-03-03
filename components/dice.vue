@@ -64,6 +64,8 @@ async function roll() {
     return currentRoll.value;
   }
 
+  emit('beforeRoll');
+
   for (let i = 0; i < props.count; i++) {
     results[i] = Math.floor(Math.random() * 6) + 1;
   }
@@ -82,7 +84,6 @@ async function roll() {
 function handleClick() {
   if (props.disabled)
     return;
-  emit('beforeRoll');
   roll();
 }
 
