@@ -9,10 +9,11 @@ const props = withDefaults(defineProps<{
 
 <template>
   <Button
-    severity="contrast" variant="outlined"
+    class="icon-btn"
     un-p="!4rem"
     un-size="28rem"
-    class="icon-btn"
+    :style="{ '--icon-size': props.iconSize }"
+    severity="contrast" variant="outlined"
   >
     <Icon :name="name" class="icon" />
   </Button>
@@ -20,8 +21,6 @@ const props = withDefaults(defineProps<{
 
 <style scoped lang="scss">
 .icon-btn {
-  --icon-size: v-bind('props.iconSize');
-
   .icon {
     width: var(--icon-size);
     height: var(--icon-size);
