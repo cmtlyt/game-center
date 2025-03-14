@@ -19,6 +19,12 @@ export default defineNuxtConfig({
       enabled: true,
     },
   },
+  imports: {
+    dirs: [
+      'composables',
+      'composables/**/*.ts',
+    ],
+  },
   modules: [
     '@vueuse/nuxt',
     '@formkit/auto-animate',

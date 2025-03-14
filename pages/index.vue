@@ -29,7 +29,6 @@ function sendMessage() {
 }
 
 async function createRoom() {
-  // eslint-disable-next-line no-console
   console.debug(await rtcRef.value?.createRoom());
 }
 
@@ -38,10 +37,18 @@ function joinRoom() {
   rtcRef.value?.sendJoinRoomOffer(window.roomId);
 }
 
-const diceResult = ref<number[]>([]);
-function handleDiceResult(result: number[]) {
-  diceResult.value = result;
-}
+const { changeStatus, gameState, next } = useMahjong(4);
+
+// 添加所有可能的游戏状态
+const gameStatuses = [
+  { label: '游戏开始', value: 'init' },
+  { label: '确定庄家', value: 'determineDealer' },
+  { label: '庄家平局重掷', value: 'dealerRollTie' },
+  { label: '第一次投掷', value: 'firstRoll' },
+  { label: '第二次投掷', value: 'secondRoll' },
+  { label: '游戏进行中', value: 'playing' },
+  { label: '游戏结束', value: 'finished' },
+] as const;
 </script>
 
 <template>
@@ -60,17 +67,58 @@ function handleDiceResult(result: number[]) {
     <button @click="sendMessage">
       发送消息
     </button>
-  </div>
-  投掷结果：{{ diceResult }}
 
-  <h2>骰子组合</h2>
-  <div>
-    <Dice :size="10" :count="3" :column="2" :gap="10" @finish="handleDiceResult" />
-  </div>
-  <h2>单个骰子</h2>
-  <div>
-    <Dice @finish="handleDiceResult" />
+    <!-- 添加游戏状态显示和切换控制 -->
+    <div class="game-status-control">
+      <h3>当前游戏状态: {{ gameState.status }}</h3>
+      <div class="status-buttons">
+        <button
+          v-for="status in gameStatuses" :key="status.value" :class="{ active: gameState.status === status.value }"
+          @click="changeStatus(status.value)"
+        >
+          {{ status.label }}
+        </button>
+      </div>
+      <button @click="next">
+        执行操作
+      </button>
+    </div>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.game-status-control {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+
+  h3 {
+    margin-bottom: 12px;
+  }
+}
+
+.status-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+
+    &:hover {
+      background: #f5f5f5;
+    }
+
+    &.active {
+      background: #e6f7ff;
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+  }
+}
+</style>
