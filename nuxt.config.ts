@@ -1,3 +1,5 @@
+import preset from './themes/preset';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   builder: 'vite',
@@ -19,11 +21,21 @@ export default defineNuxtConfig({
       enabled: true,
     },
   },
-  imports: {
-    dirs: [
-      'composables',
-      'composables/**/*.ts',
-    ],
+  unocss: {
+    nuxtLayers: true,
+    attributify: {
+      prefix: 'un-',
+    },
+  },
+  primevue: {
+    options: {
+      theme: {
+        preset,
+        options: {
+          darkModeSelector: '.dark-mode',
+        },
+      },
+    },
   },
   modules: [
     '@vueuse/nuxt',
@@ -34,5 +46,7 @@ export default defineNuxtConfig({
     '@unocss/nuxt',
     'nuxt-security',
     '@pinia/nuxt',
+    '@primevue/nuxt-module',
+    '@nuxtjs/color-mode',
   ],
 });

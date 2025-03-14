@@ -1,5 +1,14 @@
+@font-face {
+  font-family: 'FangYuan';
+  src:
+    url('../fonts/fangyuan.woff2') format('woff2'),
+    url('../fonts/fangyuan.woff') format('woff');
+  font-display: swap;
+}
+
 html {
   font-size: 1px;
+  font-family: FangYuan;
 }
 body {
   font-size: 16rem;
