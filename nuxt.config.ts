@@ -1,3 +1,6 @@
+import vue from '@vitejs/plugin-vue';
+import preset from './themes/preset';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   builder: 'vite',
@@ -9,6 +12,13 @@ export default defineNuxtConfig({
     '/': { prerender: true },
   },
   nitro: {
+    rollupConfig: {
+      // eslint-disable-next-line ts/ban-ts-comment
+      // @ts-ignore
+      plugins: [
+        vue(),
+      ],
+    },
     experimental: {
       websocket: true,
     },
@@ -17,6 +27,22 @@ export default defineNuxtConfig({
     enabled: true,
     timeline: {
       enabled: true,
+    },
+  },
+  unocss: {
+    nuxtLayers: true,
+    attributify: {
+      prefix: 'un-',
+    },
+  },
+  primevue: {
+    options: {
+      theme: {
+        preset,
+        options: {
+          darkModeSelector: '.dark-mode',
+        },
+      },
     },
   },
   modules: [
@@ -28,5 +54,9 @@ export default defineNuxtConfig({
     '@unocss/nuxt',
     'nuxt-security',
     '@pinia/nuxt',
+    '@primevue/nuxt-module',
+    '@nuxtjs/color-mode',
+    'v-satori/nuxt',
+    'unplugin-font-to-buffer/nuxt',
   ],
 });

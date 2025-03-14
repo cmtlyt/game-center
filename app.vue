@@ -27,11 +27,12 @@ useHead({
 <template>
   <SpeedInsights />
   <NuxtPage />
+  <Toast />
 </template>
 
-<style lang="scss">
-@use '@/assets/styles/main.scss' as *;
+<style lang="scss" src="@/assets/styles/main.scss"></style>
 
+<style lang="scss">
 .page-enter-active,
 .page-leave-active {
   transition: all 0.4s;
