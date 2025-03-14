@@ -10,7 +10,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint": "eslint --fix"
   },
   "dependencies": {
     "@cmtlyt/base": "^0.11.3",

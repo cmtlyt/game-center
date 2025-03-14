@@ -27,11 +27,12 @@ const emit = defineEmits<{
   beforeRoll: [];
 }>();
 
-// 根据骰子数量初始化结果数组
-const results = Array.from({ length: props.count }, () => 1);
-
-// 当前正在执行的 Promise
-const currentRoll = shallowRef<Promise<number[]>>();
+const { results, currentRoll, roll } = useDiceRoll({
+  count: props.count,
+  duration: props.duration,
+  onBeforeRoll: () => emit('beforeRoll'),
+  onFinish: results => emit('finish', results),
+});
 
 /**
  * 骰子各点数对应的点的位置定义
@@ -57,29 +58,6 @@ const FACE_DOT_POSITIONS = {
   top: DICE_NUMBER_POSITIONS[6],
   bottom: DICE_NUMBER_POSITIONS[6],
 } as const;
-
-// 骰子投掷动画
-async function roll() {
-  if (currentRoll.value) {
-    return currentRoll.value;
-  }
-
-  emit('beforeRoll');
-
-  for (let i = 0; i < props.count; i++) {
-    results[i] = Math.floor(Math.random() * 6) + 1;
-  }
-
-  currentRoll.value = new Promise<number[]>((resolve) => {
-    setTimeout(() => {
-      emit('finish', [...results]);
-      resolve([...results]);
-      currentRoll.value = undefined;
-    }, props.duration);
-  });
-
-  return currentRoll;
-}
 
 function handleClick() {
   if (props.disabled)

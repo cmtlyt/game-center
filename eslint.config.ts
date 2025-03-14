@@ -10,4 +10,7 @@ export default antfu({
     quotes: 'single',
     semi: true,
   },
+  rules: {
+    'no-console': ['error', { allow: ['debug'] }],
+  },
 });

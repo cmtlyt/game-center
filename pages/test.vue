@@ -29,7 +29,6 @@ function sendMessage() {
 }
 
 async function createRoom() {
-  // eslint-disable-next-line no-console
   console.debug(await rtcRef.value?.createRoom());
 }
 
