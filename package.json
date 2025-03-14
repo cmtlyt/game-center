@@ -25,7 +25,6 @@
     "ohash": "^1.1.6",
     "pinia": "^2.3.1",
     "primevue": "^4.3.2",
-    "satori": "^0.12.1",
     "socket.io-client": "^4.8.1",
     "vue": "latest",
     "vue-router": "latest"
@@ -53,9 +52,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
     "nuxt-security": "^2.2.0",
-    "sass": "^1.85.1",
-    "unplugin-font-to-buffer": "^0.2.0",
-    "v-satori": "^0.2.0"
+    "sass": "^1.85.1"
   },
   "lint-staged": {
     "*.{ts,vue}": [

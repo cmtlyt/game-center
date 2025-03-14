@@ -1,4 +1,3 @@
-import vue from '@vitejs/plugin-vue';
 import preset from './themes/preset';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -12,13 +11,6 @@ export default defineNuxtConfig({
     '/': { prerender: true },
   },
   nitro: {
-    rollupConfig: {
-      // eslint-disable-next-line ts/ban-ts-comment
-      // @ts-ignore
-      plugins: [
-        vue(),
-      ],
-    },
     experimental: {
       websocket: true,
     },
@@ -56,7 +48,5 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@primevue/nuxt-module',
     '@nuxtjs/color-mode',
-    'v-satori/nuxt',
-    'unplugin-font-to-buffer/nuxt',
   ],
 });
